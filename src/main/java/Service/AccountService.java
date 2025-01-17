@@ -16,11 +16,9 @@ public class AccountService {
     }
 
     public Account createAccount(Account a) {
-
         if (a.getPassword().length() < 4 || a.getUsername().isBlank()) {
             return null;
         }
-
         return this.accountDAO.insertAccount(a);
     }
 

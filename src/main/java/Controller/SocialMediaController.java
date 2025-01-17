@@ -3,7 +3,6 @@ package Controller;
 
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -25,7 +24,7 @@ public class SocialMediaController {
     AccountService accountService;
     MessageService messageService;
 
-    SocialMediaController() {
+    public SocialMediaController() {
         this.accountService = new AccountService();
         this.messageService = new MessageService();
     }
@@ -37,25 +36,19 @@ public class SocialMediaController {
      */
     public Javalin startAPI() {
         Javalin app = Javalin.create();
-        app.get("example-endpoint", this::exampleHandler);
 
         app.post("/register", this::registerHandler);
-
         app.post("/login", this::loginHandler);
-
         app.post("/messages", this::postMessage);
-
+        app.get("/messages", this::getMessages);
+        app.get("/messages/{message_id}", this::getMessageById);
+        app.delete("/messages/{message_id}", this::deleteMessageById);
+        app.patch("/messages/{message_id}", this::updateMessage);
+        app.get("/accounts/{account_id}/messages", this::getMessagesByAccountId);
 
         return app;
     }
 
-    /**
-     * This is an example handler for an example endpoint.
-     * @param context The Javalin Context object manages information about both the HTTP request and response.
-     */
-    private void exampleHandler(Context context) {
-        context.json("sample text");
-    }
 
     private void registerHandler(Context ctx) throws JsonProcessingException {
         ObjectMapper m = new ObjectMapper();
@@ -93,6 +86,43 @@ public class SocialMediaController {
     private void getMessages(Context ctx) {
         List<Message> msgs = this.messageService.getMessages();
         ctx.json(msgs);
+    }
+
+    private void getMessageById(Context ctx) throws NumberFormatException {
+        String pathStr = ctx.pathParam("message_id");
+
+        Message m = this.messageService.getMessageById(Integer.valueOf(pathStr));
+
+        if (m != null) {
+            ctx.json(m);
+        }
+    }
+
+    private void deleteMessageById(Context ctx) throws NumberFormatException {
+        String pathStr = ctx.pathParam("message_id");
+
+        Message m = this.messageService.deleteMessageById(Integer.valueOf(pathStr));
+        if (m != null) {
+            ctx.json(m);
+        }
+    }
+
+    private void updateMessage(Context ctx) throws NumberFormatException, JsonProcessingException {
+        ObjectMapper o = new ObjectMapper();
+        Message m = o.readValue(ctx.body(), Message.class);
+        m.setMessage_id(Integer.valueOf(ctx.pathParam("message_id")));
+        m = this.messageService.updateMessage(m);
+        if (m == null) {
+            ctx.status(400);
+        } else {
+            ctx.json(m);
+        }
+    }
+
+    private void getMessagesByAccountId(Context ctx) throws NumberFormatException {
+        String pathStr = ctx.pathParam("account_id");
+        List<Message> ms = this.messageService.getMessagesByAccountId(Integer.valueOf(pathStr));
+        ctx.json(ms);
     }
 
 
